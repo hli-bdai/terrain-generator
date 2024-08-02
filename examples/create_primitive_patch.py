@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import trimesh
 import inspect
+import argparse
 
 from terrain_generator.wfc.wfc import WFCSolver
 
@@ -315,7 +316,7 @@ def generate_random_tunnel_slope(dim, level, mesh_dir):
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
     generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
 
-def generate_stairs(dim, level, mesh_dir):
+def generate_stairs(dim, level, mesh_dir, visualize=False):
     # * max step height for full staircase
     height_diff = level * 2.0
     # * sets the number of stairs by size of the array
@@ -329,13 +330,19 @@ def generate_stairs(dim, level, mesh_dir):
         MeshPartsCfg(dim=dim), height_diff=height_diff, num_stairs=num_stairs, type=type, noise=noise)
     cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
-    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
+    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=visualize)
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Create some primitive patches")
+    parser.add_argument(
+        "--visualize", type=bool, default=False, help="Visualizing the primitives"
+    )
 
     dim = (3.0, 3.0, 3.0)
     level = 0.5
     mesh_dir = "results/primitive_patch"
+    args = parser.parse_args()
 
     for level in np.arange(0.0, 1.1, 0.1):
         # generate_gaps(dim, level, mesh_dir)
@@ -353,7 +360,7 @@ if __name__ == "__main__":
         # generate_narrows_with_side_height(dim, level, mesh_dir, (90, ))
         # generate_narrows_with_side_height(dim, level, mesh_dir, (180, ))
         # generate_narrows_with_side_height(dim, level, mesh_dir, (270, ))
-        generate_stairs(dim, level, mesh_dir)
+        generate_stairs(dim, level, mesh_dir, args.visualize)
         # generate_stepping_stones(dim, level, mesh_dir, (90, ))
 
         # generate_stepping(dim, level, mesh_dir)

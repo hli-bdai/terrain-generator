@@ -281,7 +281,8 @@ def visualize_mesh(mesh: Union[trimesh.Trimesh, o3d.geometry.TriangleMesh], save
     o3d_mesh.rotate(R, center=[0, 0, 0])
     o3d.visualization.draw_geometries([o3d_mesh])
     vis = o3d.visualization.Visualizer()
-    vis.capture_screen_image(save_path)
+    if None != save_path:
+        vis.capture_screen_image(save_path)
 
 
 def compute_signed_distance_and_closest_geometry(scene: o3d.t.geometry.RaycastingScene, query_points: np.ndarray):
