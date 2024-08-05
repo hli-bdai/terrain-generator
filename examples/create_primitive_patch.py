@@ -14,6 +14,7 @@ from terrain_generator.wfc.wfc import WFCSolver
 from terrain_generator.trimesh_tiles.mesh_parts.create_tiles import create_mesh_pattern
 from terrain_generator.utils import visualize_mesh
 from terrain_generator.trimesh_tiles.mesh_parts.mesh_parts_cfg import MeshPartsCfg, MeshPattern
+from terrain_generator.trimesh_tiles.patterns.pattern_generator import generate_stepping_stones
 
 from configs.indoor_cfg import IndoorPattern, IndoorPatternLevels
 from configs.navigation_cfg import IndoorNavigationPatternLevels
@@ -26,7 +27,7 @@ def generate_tiles(
     cfg,
     mesh_name="result_mesh.stl",
     mesh_dir="results/result",
-    visualize=False,
+    visualize=True,
 ):
 
     dim = cfg.dim
@@ -103,7 +104,8 @@ def generate_steps(dim, level, mesh_dir):
     cfgs = create_step(MeshPartsCfg(dim=dim), height_diff=height_diff)
     cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
-    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
+    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=True)
+
 
 def generate_ramp(dim, level, mesh_dir):
     height_diff = level * 1.0
@@ -157,14 +159,6 @@ def generate_narrows(dim, level, mesh_dir, rotation):
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
     generate_tiles(cfg, mesh_name=f"mesh_{rotation[0]}_{level:.1f}.obj", mesh_dir=mesh_dir)
 
-def generate_cylinder(dim, level, mesh_dir):
-    width = (1.0 - level) * 0.5 + 0.1
-    side_std = 0.0
-    height_std = 0.0
-    cfgs = create_cylinder(MeshPartsCfg(dim=dim), width=width, side_std=side_std, height_std=height_std)
-    cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
-    mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
-    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
 
 
 def generate_narrows_with_side(dim, level, mesh_dir, rotation):
@@ -184,10 +178,10 @@ def generate_narrows_with_side_height(dim, level, mesh_dir, rotation):
     cfgs = create_narrow(MeshPartsCfg(dim=dim), width=width, side_std=side_std, height_std=height_std, rotation=rotation)
     cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
-    generate_tiles(cfg, mesh_name=f"mesh_{rotation[0]}_{level:.1f}.obj", mesh_dir=mesh_dir)
+    generate_tiles(cfg, mesh_name=f"mesh_{rotation[0]}_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=True)
 
 
-def generate_stepping(dim, level, mesh_dir):
+def generate_stepping(dim, level, mesh_dir, visualize=False):
     # width = (1.0 - level) * 0.5 + 0.1
     width = 0.5
     side_std = 0.2 * level
@@ -200,7 +194,20 @@ def generate_stepping(dim, level, mesh_dir):
     cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
     # generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
-    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
+    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=visualize)
+
+def generate_stepping_stones_imp(dim, level, mesh_dir, visualize=False):
+    # width = (1.0 - level) * 0.5 + 0.1
+    width = 0.5
+    side_std = 0.2 * level
+    height_std = 0.05 * level
+    n = 6
+    ratio = 0.5 + (1.0 - level) * 0.3
+    cfgs = generate_stepping_stones(name="stepping_0.5", dim=dim, max_h=2.0, min_h=1.0, weight=1.2)
+    cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
+    mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
+    # generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir)
+    generate_tiles(cfg, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=visualize)
 
 
 def generate_box_grid(dim, level, mesh_dir):
@@ -349,7 +356,7 @@ if __name__ == "__main__":
         # generate_gaps_with_h(dim, level, mesh_dir)
         # generate_middle_steps(dim, level, mesh_dir)
         # generate_middle_steps_wide(dim, level, mesh_dir)
-        # generate_steps(dim, level, mesh_dir)
+        # generate_steps(dim, level, mesh_dir)        
         # generate_ramp(dim, level, mesh_dir)
         # generate_narrows(dim, level, mesh_dir, (90, ))
         # generate_narrows(dim, level, mesh_dir, (180, ))
@@ -360,12 +367,13 @@ if __name__ == "__main__":
         # generate_narrows_with_side_height(dim, level, mesh_dir, (90, ))
         # generate_narrows_with_side_height(dim, level, mesh_dir, (180, ))
         # generate_narrows_with_side_height(dim, level, mesh_dir, (270, ))
-        generate_stairs(dim, level, mesh_dir, args.visualize)
+        # generate_stairs(dim, level, mesh_dir, args.visualize)
         # generate_stepping_stones(dim, level, mesh_dir, (90, ))
+        # generate_stepping_stones_imp(dim, level, mesh_dir, args.visualize)
 
-        # generate_stepping(dim, level, mesh_dir)
+        # generate_stepping(dim, level, mesh_dir, args.visualize)
         # generate_box_grid(dim, level, mesh_dir)
-        # generate_box_grid_slope(dim, level, mesh_dir)
+        generate_box_grid_slope(dim, level, mesh_dir)
         # generate_box_grid_small(dim, level, mesh_dir)
         # generate_floating_box_grid(dim, level, mesh_dir)
         # generate_floating_box_grid_slope(dim, level, mesh_dir)
