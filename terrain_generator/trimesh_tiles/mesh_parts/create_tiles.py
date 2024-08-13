@@ -102,9 +102,8 @@ def create_mesh_pattern(cfg: MeshPattern) -> dict:
     all_tiles = []
     for i, tile in enumerate(tiles):
         mesh_cfg = cfg.mesh_parts[i]
-        all_tiles += tile.get_all_tiles(rotations=mesh_cfg.rotations, flips=mesh_cfg.flips)
-        # tile = create_mesh_tile(mesh_cfg)
-        # if tile is not None:
-        #     tiles += tile.get_all_tiles(rotations=mesh_cfg.rotations, flips=mesh_cfg.flips)
+        tile = create_mesh_tile(mesh_cfg)
+        if tile is not None:
+            all_tiles += tile.get_all_tiles(rotations=mesh_cfg.rotations, flips=mesh_cfg.flips)
     tile_dict = {tile.name: tile for tile in all_tiles}
     return tile_dict
