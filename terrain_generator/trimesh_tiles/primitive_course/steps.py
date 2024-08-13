@@ -242,6 +242,54 @@ def create_narrow(cfg: MeshPartsCfg, width=0.5, side_std=0.0, height_std=0.0, n=
     )
     return cfgs
 
+# angle has unit: rad
+def create_inclined_surfaces(cfg: MeshPartsCfg, width=0.5, height=0.0, side_distance=0.0, side_std=0.0, height_std=0.0, n=8, angle=0.0, **kwargs):
+    dims = []
+    transformations = []
+    thickness = 0.05    # thickness of the inclined surfaces
+    step_length = cfg.dim[1] / n
+
+    for i in range(n):
+        # First platform_
+        if i == floor(n/2) - 1:
+            dims.append([width, step_length + width/2, thickness])
+            y = -cfg.dim[1] / 2.0 + (i + 0.5) * step_length + width / 4
+        else:
+            dims.append([width, step_length, thickness])
+            y = -cfg.dim[1] / 2.0 + (i + 0.5) * step_length
+        x = np.random.normal(side_distance*(-1)**(i%2), side_std)
+        z = cfg.floor_thickness / 2.0 + np.random.normal(0, height_std) + height
+        t = trimesh.transformations.rotation_matrix(angle*(-1)**(i%2+1), [0, 1, 0])
+        t[:3, -1] = np.array([x, y, z])
+        transformations.append(t)
+
+    cfgs = (
+        PlatformMeshPartsCfg(
+            name="start",
+            dim=cfg.dim,
+            array=np.array([[0, 0], [0, 0]]),            
+            flips=(),
+            weight=0.1,
+        ),
+        BoxMeshPartsCfg(
+            name="surface",
+            dim=cfg.dim,
+            box_dims=tuple(dims),
+            transformations=tuple(transformations),            
+            weight=0.1,
+            minimal_triangles=False,
+            add_floor=False,
+        ),
+        PlatformMeshPartsCfg(
+            name="goal",
+            dim=cfg.dim,
+            array=np.array([[0, 0], [0, 0]]),            
+            flips=(),
+            weight=0.1,
+        ),
+    )
+    return cfgs
+
 
 def create_stepping(cfg: MeshPartsCfg, width=0.5, side_std=0.0, height_std=0.0, ratio=0.5, n=10, **kwargs):
     dims = []
@@ -335,13 +383,13 @@ def create_floating_box_grid(
     cfgs = list(cfgs)
     array = cfgs[1].array
 
-    z_dim_array = np.ones_like(array)
+    z_dim_array = np.ones_like(array)*1.0
     floating_array = array + np.random.normal(height_gap_mean, height_gap_std, size=array.shape) + z_dim_array
     # print("floating_array", floating_array)
-    # array[5, :] = height_diff
+    array[5, :] = height_diff
     cfgs.append(
         PlatformMeshPartsCfg(
-            name="middle_floating",
+            name="floating",
             dim=cfg.dim,
             array=floating_array,
             z_dim_array=z_dim_array,
@@ -470,6 +518,58 @@ def create_overhanging_boxes(cfg: MeshPartsCfg, width=0.5, side_std=0.0, height_
             weight=0.1,
             minimal_triangles=False,
             add_floor=False,
+        ),
+        PlatformMeshPartsCfg(
+            name="goal",
+            dim=cfg.dim,
+            array=np.array([[0, 0], [0, 0]]),
+            # rotations=(90, 180, 270),
+            flips=(),
+            weight=0.1,
+        ),
+    )
+    return cfgs
+
+def create_two_overhanging_boxes(cfg: MeshPartsCfg, side_std=0.0, height_offset=0.0, height_std=0.0, add_floor=False, **kwargs):
+    box_dims = []
+    transformations = []
+
+    n = 2
+    width = 0.2
+    distance = 0.5
+    step_length = cfg.dim[1]/3.0
+    z_nominal_array = np.array([0.15, -0.15]) + height_offset
+    x_nominal_array = np.array([-distance/2.0, distance/2.0])
+    y_nominal_array = np.array([-step_length/2.0, step_length/2.0])        
+
+    for i in range(n):                
+        box_dims.append([width, cfg.dim[1]/2.0, cfg.floor_thickness*1.5])
+        t = np.eye(4)
+        x = x_nominal_array[i] + np.random.normal(0, side_std)
+        y = y_nominal_array[i] 
+        z = z_nominal_array[i] + np.random.normal(0, height_std)
+        t[:3, -1] = np.array([x, y, z])
+        transformations.append(t)
+
+    cfgs = (
+        PlatformMeshPartsCfg(
+            name="start",
+            dim=cfg.dim,
+            array=np.array([[0, 0], [0, 0]]),
+            # rotations=(90, 180, 270),
+            flips=(),
+            weight=0.1,
+        ),
+        BoxMeshPartsCfg(
+            name="overhang_boxes",
+            dim=cfg.dim,
+            box_dims=tuple(box_dims),
+            transformations=tuple(transformations),
+            # rotations=(90, 180, 270),
+            # flips=("x", "y"),
+            weight=0.1,
+            minimal_triangles=False,
+            add_floor=add_floor,
         ),
         PlatformMeshPartsCfg(
             name="goal",
@@ -615,7 +715,7 @@ def create_stairs(
             weight=0.1,
         ),
         PlatformMeshPartsCfg(
-            name="stairs",
+            name=type,
             dim=cfg.dim,
             array=((stairs_array*height_diff)+cfg.floor_thickness),
             # rotations=(90, 180, 270),
