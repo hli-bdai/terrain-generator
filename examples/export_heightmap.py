@@ -2,7 +2,6 @@ import trimesh
 import pandas as pd
 import numpy as np
 import os
-from terrain_generator.utils.mesh_utils import get_height_array_of_mesh2
 from multiprocessing import Pool
 import argparse
 import shutil
@@ -63,7 +62,7 @@ def heightmap_to_mesh(image_path, scale=1.0, resolution=0.04):
 
     mesh.show()
 
-def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=False):
+def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=False, clip_to_ground=False):
     # Load the mesh
     mesh = trimesh.load(mesh_file)
     mesh.show()
@@ -74,10 +73,14 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
 
     # Compute the bounds of the mesh
     vertices = mesh.vertices
-    min_bound, max_bound = compute_bounds(vertices)
-    size = max_bound - min_bound
+    min_bound, max_bound = compute_bounds(vertices)    
     print("max bound = {}".format(max_bound))
     print("min bound = {}".format(min_bound))
+
+    if clip_to_ground: # clip the lower bound (z direction) to the ground
+        min_bound[2] = 0.0
+    
+    size = max_bound - min_bound
     
     size_x = math.ceil(size[0]/resolution)
     size_y = math.ceil(size[1]/resolution)
@@ -118,7 +121,9 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     height_map = Image.fromarray(heights)
     height_map.save(output_file)
 
-    # heightmap_to_mesh(output_file, max_bound[2]-min_bound[2])
+    if check_revserse:
+        heightmap_to_mesh(output_file, max_bound[2]-min_bound[2])
+    
     # DF = pd.DataFrame(heights)
     # print("Converted to DataFrame")
 

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import trimesh
 import inspect
 import argparse
+import copy
 
 from terrain_generator.wfc.wfc import WFCSolver
 
@@ -18,32 +19,37 @@ def generate_tiles(
     cfgs,
     mesh_name="result_mesh.stl",
     mesh_dir="results/result",
-    visualize=False,
+    height_offset=0.0,
+    visualize=False  
 ):    
     floating_mesh = trimesh.Trimesh()
     result_mesh = trimesh.Trimesh()
 
     x_offset = 0.0
     y_offset = 0.0   
+    mesh_id = 0
     for mesh_cfg in cfgs:        
         tile = create_mesh_tile(mesh_cfg)
         mesh = tile.get_mesh().copy()         
+        dim = mesh_cfg.dim
+        if mesh_id > 0:
+            y_offset += dim[1]/2.0
         xy_offset = np.array([x_offset, y_offset, 0.0])
         mesh.apply_translation(xy_offset)
         if "floating" in mesh_cfg.name:
             floating_mesh += mesh
         else:
-            result_mesh += mesh
-        dim = mesh_cfg.dim
-        # x_offset += dim[0]
-        y_offset += dim[1]
+            result_mesh += mesh        
+        
+        mesh_id += 1
+        y_offset += dim[1]/2.0
 
     # Rotation about z-axis for -90 degree for the exported mesh
     result_mesh.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/2.0, [0, 0, 1]))
     min_bound = result_mesh.bounds[0]
     max_bound = result_mesh.bounds[1]
     center_x = min_bound[0]+(max_bound[0]-min_bound[0])/2.0
-    center_offset = -np.array([center_x, 0.0, min_bound[2]])
+    center_offset = -np.array([center_x, 0.0, min_bound[2]-height_offset])
     result_mesh.apply_translation(center_offset)
 
     os.makedirs(mesh_dir, exist_ok=True)
@@ -63,7 +69,7 @@ def generate_stairs(dim, level, mesh_dir, stair_type='straignt_up', visualize=Fa
     height_diff = level * 2.0
 
     # * sets the number of stairs by size of the array
-    num_stairs = 9        
+    num_stairs = 7        
 
     cfgs = create_stairs(
         MeshPartsCfg(dim=dim), height_diff=height_diff, num_stairs=num_stairs, type=stair_type, noise=0.0)
@@ -113,20 +119,10 @@ def generate_complex_terrain(dim, level, mesh_dir, visualize=False):
             weight=0.1,
         ),
     )
-    overhang_floor_cfgs = (
-        PlatformMeshPartsCfg(
-            name="overhang_floor",
-            dim=dim,
-            height_offset=height,
-            array=np.array([[0, 0], [0, 0]]),
-            # rotations=(90, 180, 270),
-            flips=(),
-            weight=0.1,
-        ),
-    )
-    ascend_stair_cfgs = generate_stairs(dim, height/2.0, stair_type='straight_up', mesh_dir=mesh_dir)
-    descend_stair_cfgs = generate_stairs(dim, height/2.0, stair_type='straight_down', mesh_dir=mesh_dir)
-    inclined_surface_cfgs = generate_inclined_surfaces(dim, level, mesh_dir)
+    dim_w_longer_y = np.array(dim) + np.array([0.0,0.5,0.0])
+    ascend_stair_cfgs = generate_stairs(dim_w_longer_y, height/2.0, stair_type='straight_up', mesh_dir=mesh_dir)
+    descend_stair_cfgs = generate_stairs(dim_w_longer_y, height/2.0, stair_type='straight_down', mesh_dir=mesh_dir)
+    inclined_surface_cfgs = generate_inclined_surfaces(dim_w_longer_y, level, mesh_dir)
     overhang_cfgs = generate_overhanging_boxes(dim, level, mesh_dir, height=height)
 
     cfgs_list = [floor_cfgs, inclined_surface_cfgs, ascend_stair_cfgs, overhang_cfgs, 
@@ -134,7 +130,7 @@ def generate_complex_terrain(dim, level, mesh_dir, visualize=False):
     cfgs_res = concatenate_configs(cfgs_list)
     
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
-    generate_tiles(cfgs_res, mesh_name="mesh_complex_terrain.obj", mesh_dir=mesh_dir, visualize=visualize)
+    generate_tiles(cfgs_res, mesh_name="mesh_complex_terrain.obj", mesh_dir=mesh_dir, height_offset=1.0, visualize=visualize)
     
 
     
