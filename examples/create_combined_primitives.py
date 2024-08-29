@@ -89,13 +89,35 @@ def generate_inclined_surfaces(dim, level, mesh_dir, height=0.0, visualize=False
     generate_tiles(cfgs, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=visualize)
     return cfgs
 
-def generate_overhanging_boxes(dim, level, mesh_dir, height=0.0, visualize=False):    
-    cfgs = create_two_overhanging_boxes(MeshPartsCfg(dim=dim), height_offset=height, side_std=0.0, height_std=0.0)    
+def generate_overhanging_boxes(dim, level, mesh_dir, height=0.0, visualize=False):
+    cfgs = create_two_overhanging_boxes(MeshPartsCfg(dim=dim), height_offset=height, side_std=0.0, height_std=0.0, aligned=True)    
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)    
     generate_tiles(cfgs, mesh_name=f"mesh_{level:.1f}.obj", mesh_dir=mesh_dir, visualize=visualize)
     return cfgs
    
+def generate_single_beam(dim, level, mesh_dir, height=0.0, visualize=False):
+    width = 0.3
+    thickness = 0.1
+    box_dims = [width, 0.9*dim[1], thickness]
 
+    transformations = []
+    pitch = np.pi/15.0
+    t = trimesh.transformations.rotation_matrix(pitch, [1, 0, 0])
+    t[:3, -1] = np.array([0.0, 0.0, height])
+    transformations.append(t)
+    
+    return (BoxMeshPartsCfg(
+            name="beam",
+            dim=dim,
+            transformations=tuple(transformations),            
+            box_dims=tuple(box_dims),            
+            rotations=(15, 0.0, 0.0),            
+            weight=0.1,
+            minimal_triangles=False,
+            add_floor=False,
+        ),
+    )
+    
 def concatenate_configs(list_of_configs : list) -> list: 
     cfgs_res = []    
     for cfgs_ in list_of_configs: 
@@ -123,11 +145,15 @@ def generate_complex_terrain(dim, level, mesh_dir, visualize=False):
     ascend_stair_cfgs = generate_stairs(dim_w_longer_y, height/2.0, stair_type='straight_up', mesh_dir=mesh_dir)
     descend_stair_cfgs = generate_stairs(dim_w_longer_y, height/2.0, stair_type='straight_down', mesh_dir=mesh_dir)
     inclined_surface_cfgs = generate_inclined_surfaces(dim_w_longer_y, level, mesh_dir)
-    overhang_cfgs = generate_overhanging_boxes(dim, level, mesh_dir, height=height)
+    overhang_cfgs = generate_overhanging_boxes(dim, level, mesh_dir, height)
+    beam_cfgs = generate_single_beam(dim, level, mesh_dir, height+0.2)
 
-    cfgs_list = [floor_cfgs, inclined_surface_cfgs, ascend_stair_cfgs, overhang_cfgs, 
+    cfgs_list1 = [floor_cfgs, inclined_surface_cfgs, ascend_stair_cfgs, overhang_cfgs, 
                  descend_stair_cfgs, floor_cfgs]    
-    cfgs_res = concatenate_configs(cfgs_list)
+    cfgs_list2 = [floor_cfgs, inclined_surface_cfgs, ascend_stair_cfgs, beam_cfgs, 
+                 descend_stair_cfgs, floor_cfgs]    
+    
+    cfgs_res = concatenate_configs(cfgs_list1)
     
     mesh_dir = os.path.join(mesh_dir, inspect.currentframe().f_code.co_name)
     generate_tiles(cfgs_res, mesh_name="mesh_complex_terrain.obj", mesh_dir=mesh_dir, height_offset=1.0, visualize=visualize)

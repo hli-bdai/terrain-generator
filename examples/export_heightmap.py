@@ -76,9 +76,6 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     min_bound, max_bound = compute_bounds(vertices)    
     print("max bound = {}".format(max_bound))
     print("min bound = {}".format(min_bound))
-
-    if clip_to_ground: # clip the lower bound (z direction) to the ground
-        min_bound[2] = 0.0
     
     size = max_bound - min_bound
     
@@ -92,8 +89,11 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     grid_x = grid_x * resolution  + min_bound[0]
     grid_y = grid_y * resolution  + min_bound[1]
     
+    min_height = min_bound[2]
+    if clip_to_ground: # clip the lower bound (z direction) to the ground
+        min_height = 0.0
     # Create an array to hold the heights
-    heights = np.full((size_x, size_y), min_bound[2])  # Initialize with min Z
+    heights = np.full((size_x, size_y), min_height)  # Initialize with min Z
 
     # Perform ray tracing for each grid point
     for i in range(size_x):
@@ -109,8 +109,8 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
                 heights[i, j] = np.max([loc[2] for loc in locations])
 
     # Normalize heights to be between 0 and 255
-    height_scale = max_bound[2] - min_bound[2]
-    heights = (heights - min_bound[2]) / height_scale * 255
+    height_scale = max_bound[2] - min_height
+    heights = (heights - min_height) / height_scale * 255
     heights = heights.astype(np.uint8)
 
     heights = np.flip(heights, axis=1)
@@ -122,7 +122,7 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     height_map.save(output_file)
 
     if check_revserse:
-        heightmap_to_mesh(output_file, max_bound[2]-min_bound[2])
+        heightmap_to_mesh(output_file, max_bound[2]-min_height)
     
     # DF = pd.DataFrame(heights)
     # print("Converted to DataFrame")
@@ -152,5 +152,5 @@ if __name__ == "__main__":
   xyzoffsets = [0.0, 0.0, 0.0]
   resolution = args.resolution
 
-  mesh_to_heightmap(args.mesh_path, args.export_path, resolution, args.check_reverse)
+  mesh_to_heightmap(args.mesh_path, args.export_path, resolution, args.check_reverse, True)
 

@@ -530,21 +530,27 @@ def create_overhanging_boxes(cfg: MeshPartsCfg, width=0.5, side_std=0.0, height_
     )
     return cfgs
 
-def create_two_overhanging_boxes(cfg: MeshPartsCfg, side_std=0.0, height_offset=0.0, height_std=0.0, add_floor=False, **kwargs):
+def create_two_overhanging_boxes(cfg: MeshPartsCfg, side_std=0.0, height_offset=0.0, height_std=0.0, aligned=False, add_floor=False, **kwargs):
     box_dims = []
     transformations = []
 
     n = 2
     width = 0.2
     distance = 0.5
-    step_length = cfg.dim[1]/3.0
-    z_nominal_array = np.array([0.15, -0.15]) + height_offset
+    step_length = 0.4*cfg.dim[1]
+    height_diff = 0.3
+    pitch = 0.0
+    if aligned:
+        distance = 0.0
+        height_diff = 0.0        
+
+    z_nominal_array = np.array([height_diff/2.0, -height_diff/2.0]) + height_offset
     x_nominal_array = np.array([-distance/2.0, distance/2.0])
     y_nominal_array = np.array([-step_length/2.0, step_length/2.0])        
 
     for i in range(n):                
-        box_dims.append([width, cfg.dim[1]/2.0, cfg.floor_thickness*1.5])
-        t = np.eye(4)
+        box_dims.append([width, step_length, cfg.floor_thickness*1.5])
+        t = trimesh.transformations.rotation_matrix(pitch, [1, 0, 0])
         x = x_nominal_array[i] + np.random.normal(0, side_std)
         y = y_nominal_array[i] 
         z = z_nominal_array[i] + np.random.normal(0, height_std)
