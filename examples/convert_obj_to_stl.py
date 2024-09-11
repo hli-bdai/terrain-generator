@@ -4,20 +4,7 @@ from pywavefront import Wavefront
 import trimesh
 import argparse
 
-def convert_obj_to_stl(obj_file, stl_file):
-    # Load OBJ file
-    # scene = Wavefront(obj_file, collect_faces=True)
-    # vertices = np.array(scene.vertices)
-    # faces = np.array(scene.meshes[0].faces)
-    
-    # # Create STL mesh
-    # stl_mesh = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
-    # for i, face in enumerate(faces):
-    #     for j in range(3):
-    #         stl_mesh.vectors[i][j] = vertices[face[j]]
-
-    # # Save STL file
-    # stl_mesh.save(stl_file)
+def convert_obj_to_stl(obj_file, stl_file):    
     mesh = trimesh.load(obj_file, file_type='obj')
     
     # Save as STL file

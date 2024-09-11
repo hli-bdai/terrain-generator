@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     dim = (2.0, 3.0, 3.0)
     level = 1.0
-    mesh_dir = "results/primitive_separated"    
+    mesh_dir = "results/primitive_separated/generate_complex_terrain/"    
         
     # generate_inclined_surfaces(dim, level, mesh_dir, args.visualize)
     # generate_stairs(dim, level, mesh_dir, args.visualize)
