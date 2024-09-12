@@ -62,7 +62,16 @@ def heightmap_to_mesh(image_path, scale=1.0, resolution=0.04):
 
     mesh.show()
 
-def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=False, clip_to_ground=False):
+def mesh_to_heightmap(mesh_file, 
+                      output_file, 
+                      resolution=0.04, 
+                      check_revserse=False, 
+                      use_nonzero_ground=False):
+    """
+        Generate a height map (in the format of a depth image) from a mesh file (.stl)
+        Return: 
+            height_scale: actual height = height_scale * pixel_value(0 ~ 255) 
+    """
     # Load the mesh
     mesh = trimesh.load(mesh_file)
     mesh.show()
@@ -90,7 +99,7 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     grid_y = grid_y * resolution  + min_bound[1]
     
     min_height = min_bound[2]
-    if clip_to_ground: # clip the lower bound (z direction) to the ground
+    if use_nonzero_ground and min_bound[2] > 0.0: # clip the lower bound (z direction) to the ground
         min_height = 0.0
     # Create an array to hold the heights
     heights = np.full((size_x, size_y), min_height)  # Initialize with min Z
@@ -124,12 +133,8 @@ def mesh_to_heightmap(mesh_file, output_file, resolution=0.04, check_revserse=Fa
     if check_revserse:
         heightmap_to_mesh(output_file, max_bound[2]-min_height)
     
-    # DF = pd.DataFrame(heights)
-    # print("Converted to DataFrame")
-
-    # # save the dataframe as a csv file and hdf5 file
-    # DF.to_csv(output_file, header=None, index=None)
-    # print("Saved CSV")
+    return height_scale
+    
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Create mesh from configuration")
@@ -148,9 +153,6 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  dimensions = (6.0,30.0,2.0)
-  xyzoffsets = [0.0, 0.0, 0.0]
-  resolution = args.resolution
 
-  mesh_to_heightmap(args.mesh_path, args.export_path, resolution, args.check_reverse, True)
+  mesh_to_heightmap(args.mesh_path, args.export_path, args.resolution, args.check_reverse, True)
 
