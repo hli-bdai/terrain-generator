@@ -66,7 +66,8 @@ def mesh_to_heightmap(mesh_file,
                       output_file, 
                       resolution=0.04, 
                       check_revserse=False, 
-                      use_nonzero_ground=False):
+                      use_nonzero_ground=False,
+                      visualize=True):
     """
         Generate a height map (in the format of a depth image) from a mesh file (.stl)
         Return: 
@@ -74,7 +75,8 @@ def mesh_to_heightmap(mesh_file,
     """
     # Load the mesh
     mesh = trimesh.load(mesh_file)
-    mesh.show()
+    if visualize:
+        mesh.show()
     
     # Ensure the mesh is 3D
     if mesh.vertices.shape[1] != 3:
