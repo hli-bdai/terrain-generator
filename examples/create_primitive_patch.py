@@ -222,7 +222,7 @@ def generate_box_grid(dim, level, mesh_dir):
 
 def generate_box_grid_slope(dim, level, mesh_dir):
     height_diff = level * 1.5
-    height_std = level * 0.5
+    height_std = level * 0.0
     n = 8
     cfgs = create_box_grid(MeshPartsCfg(dim=dim), height_diff=height_diff, height_std=height_std, n=n)
     cfg = MeshPattern(dim=dim, mesh_parts=cfgs)
@@ -368,8 +368,8 @@ if __name__ == "__main__":
         # generate_narrows_with_side_height(dim, level, mesh_dir, (180, ))
         # generate_narrows_with_side_height(dim, level, mesh_dir, (270, ))
         # generate_stairs(dim, level, mesh_dir, args.visualize)
-        # generate_stepping_stones(dim, level, mesh_dir, (90, ))
-        # generate_stepping_stones_imp(dim, level, mesh_dir, args.visualize)
+        # generate_stepping(dim, level, mesh_dir, True)
+        # generate_stepping_stones_imp(dim, level, mesh_dir, True)
 
         # generate_stepping(dim, level, mesh_dir, args.visualize)
         # generate_box_grid(dim, level, mesh_dir)

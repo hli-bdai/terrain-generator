@@ -342,7 +342,10 @@ def create_stepping(cfg: MeshPartsCfg, width=0.5, side_std=0.0, height_std=0.0, 
 def create_box_grid(cfg: MeshPartsCfg, height_diff=0.5, height_std=0.2, n=8, **kwargs):
     height_diff = height_diff + cfg.floor_thickness
     array = np.zeros((n, n))
-    array[:] = np.linspace(height_diff, 0, n)
+    for i in range(n):
+        if i % 2 == 0:
+            array[i, :] = array[i, :] + np.linspace( 0, height_diff, n)
+    array[:,range(0, n, 2)] = 0.0
     array = array.T
     array += np.random.normal(0, height_std, size=array.shape)
     # array[5, :] = height_diff
