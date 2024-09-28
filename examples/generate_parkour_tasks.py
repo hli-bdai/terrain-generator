@@ -25,7 +25,7 @@ def repeat_patterns(mesh_cfg_func, n, tile_dim, terrain_level):
     combined_cfgs = concatenate_configs(cfgs_list)
     terrain_length = 0.0
     for cfg in combined_cfgs:
-        terrain_length + cfg.dim[1]
+        terrain_length + cfg.dim[0]
     return combined_cfgs, terrain_length
 
 def generate_mesh(cfgs, height_offset=0.0, visualize=False) -> trimesh.Trimesh : 
@@ -34,9 +34,7 @@ def generate_mesh(cfgs, height_offset=0.0, visualize=False) -> trimesh.Trimesh :
                       height_offset : height offset you would like to shift the generated mesh (meter)
                       visualize: option to visualize the generated mesh
         return : generated mesh (Trimesh)
-    """ 
-    
-    floating_mesh = trimesh.Trimesh()
+    """     
     result_mesh = trimesh.Trimesh()
 
     x_offset = 0.0
@@ -47,20 +45,18 @@ def generate_mesh(cfgs, height_offset=0.0, visualize=False) -> trimesh.Trimesh :
         mesh = tile.get_mesh().copy()         
         dim = mesh_cfg.dim
         if mesh_id > 0:
-            y_offset += dim[1]/2.0
+            x_offset += dim[0]/2.0
         xy_offset = np.array([x_offset, y_offset, 0.0])
         mesh.apply_translation(xy_offset)
-        if "floating" in mesh_cfg.name:
-            floating_mesh += mesh
-        else:
-            result_mesh += mesh        
-        
+
+        result_mesh += mesh 
+                           
         mesh_id += 1
-        y_offset += dim[1]/2.0
+        x_offset += dim[0]/2.0
 
     # Rotation about z-axis for -90 degree for the exported mesh
     # Why do this? Align the coordinate frame with the depth image frame (x-axis: screen bottom to up. y-axis: screen left to right)
-    result_mesh.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/2.0, [0, 0, 1]))
+    # result_mesh.apply_transform(trimesh.transformations.rotation_matrix(-np.pi/2.0, [0, 0, 1]))
     min_bound = result_mesh.bounds[0]
     max_bound = result_mesh.bounds[1]
     center_x = min_bound[0]+(max_bound[0]-min_bound[0])/2.0
@@ -123,14 +119,54 @@ def generate_task_for_one_terrain(task : ParkourTask, task_root_dir:str):
 
 
 def create_task_lists_for_multiple_terrains():
-    tile_dim = (2.0, 3.0, 3.0)
-    terrain_length = 10.0
-    terrain_levels = np.arange(0.1, 1.1, 0.1)
+    tile_dim = (3.0, 2.0, 2.0)
+    terrain_length = 5.0
+    terrain_levels = np.arange(1.0, 1.1, 0.1)
     velocity_levels = np.arange(0.2, 1.2, 0.2)    
     tasks = [
+        # ParkourTask(
+        #     mesh_cfgs_funcs = create_stepping_stones_cfgs,
+        #     terrain_name = "stepping_stones",
+        #     terrain_length = terrain_length,            
+        #     tile_dim = tile_dim,
+        #     terrain_var_levels = terrain_levels,
+        #     velocity_levels = velocity_levels
+        # ),
+        # ParkourTask(
+        #     mesh_cfgs_funcs = create_ramp_cfgs,
+        #     terrain_name = "ramps",
+        #     terrain_length = terrain_length,            
+        #     tile_dim = tile_dim,
+        #     terrain_var_levels = terrain_levels,
+        #     velocity_levels = velocity_levels
+        # ),
+        # ParkourTask(
+        #     mesh_cfgs_funcs = create_middle_steps_cfgs,
+        #     terrain_name = "middle_steps",
+        #     terrain_length = terrain_length,            
+        #     tile_dim = tile_dim,
+        #     terrain_var_levels = terrain_levels,
+        #     velocity_levels = velocity_levels
+        # )
+        # ParkourTask(
+        #     mesh_cfgs_funcs = create_central_stepping_cfgs,
+        #     terrain_name = "central_steping",
+        #     terrain_length = terrain_length,            
+        #     tile_dim = tile_dim,
+        #     terrain_var_levels = terrain_levels,
+        #     velocity_levels = velocity_levels
+        # )
+        # ParkourTask(
+        #     mesh_cfgs_funcs = create_gaps_cfgs,
+        #     terrain_name = "gaps",
+        #     terrain_length = terrain_length,            
+        #     tile_dim = tile_dim,
+        #     terrain_var_levels = terrain_levels,
+        #     velocity_levels = velocity_levels
+        # )
         ParkourTask(
-            mesh_cfgs_funcs = create_stepping_stones_cfgs,
-            terrain_name = "stepping_stones",
+            mesh_cfgs_funcs = create_single_beam_cfgs,
+            terrain_name = "single_beam",
             terrain_length = terrain_length,            
             tile_dim = tile_dim,
             terrain_var_levels = terrain_levels,

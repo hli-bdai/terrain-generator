@@ -8,7 +8,12 @@ from terrain_generator.trimesh_tiles.primitive_course.steps import *
 
 
 
-def create_stairs_cfgs(dim, height, stair_type='straignt_up', level=0.0):    
+def create_stairs_cfgs(dim, height, stair_type='straignt_up', level=0.0):   
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """ 
     # * types = {straight_up, straight_down, pyramid_up, pyramid_down, up_down, down_up, plus_up, plus_down}
     # * sets the number of stairs by size of the array
     num_stairs = 7        
@@ -29,11 +34,12 @@ def create_inclined_surfaces_cfgs(dim, height=0.0):
     return cfgs
 
    
-def create_single_beam_cfgs(dim, height=0.0):
+def create_single_beam_cfgs(dim, level):
     width = 0.3
     thickness = 0.1
     box_dims = [width, 0.9*dim[1], thickness]
 
+    height=level * 0.2
     transformations = []
     pitch = np.pi/15.0
     t = trimesh.transformations.rotation_matrix(pitch, [1, 0, 0])
@@ -53,31 +59,80 @@ def create_single_beam_cfgs(dim, height=0.0):
     )
 
 def create_central_stepping_cfgs(dim, level):
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """
     width = 0.5
     side_std = 0.2 * level
     height_std = 0.05 * level
     n = 6
     ratio = 0.5 + (1.0 - level) * 0.3
-    cfgs = create_stepping(
-        MeshPartsCfg(dim=dim), width=width, side_std=side_std, height_std=height_std, n=n, ratio=ratio
+    
+    step_length = dim[0] / n * ratio
+    dims = []
+    transformations = []
+    floor_thickness = 0.1
+    for i in range(n):
+        # First platform_
+        dims.append([step_length, width, floor_thickness])
+        t = np.eye(4)
+        y = np.random.normal(0, side_std)
+        x = -dim[0] / 2.0 + (i + 0.5) * dim[0] / n
+        z = floor_thickness / 2.0 + np.random.normal(0, height_std)
+        t[:3, -1] = np.array([x, y, z])
+        transformations.append(t)
+
+    start_and_goal_dim = (0.3, dim[1], dim[2])
+    cfgs = (
+        PlatformMeshPartsCfg(
+            name="start",
+            dim=start_and_goal_dim,
+            array=np.array([[0, 0], [0, 0]]) ,            
+            flips=(),
+            weight=0.1,
+        ),
+        BoxMeshPartsCfg(
+            name="middle",
+            dim=dim,
+            box_dims=tuple(dims),
+            transformations=tuple(transformations),          
+            weight=0.1,
+            minimal_triangles=False,
+            add_floor=False,
+        ),
+        PlatformMeshPartsCfg(
+            name="end",
+            dim=start_and_goal_dim,
+            array=np.array([[0, 0], [0, 0]]) ,            
+            flips=(),
+            weight=0.1,
+        ),
     )
     return cfgs
+    
 
 def create_stepping_stones_cfgs(dim, level):
-    n = 8
-    height_diff = level * 0.6
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """
+    n = 11
+    height_diff = level * 1.0
     height_diff = height_diff 
     array_up = np.zeros((n, n))
     array_down = np.zeros((n, n))
     for i in range(n):
-        if i % 2 == 0:
-            array_up[i, :] = array_up[i, :] + np.linspace(0, height_diff, n)
-            array_down[i, :] = array_down[i, :] + np.linspace(height_diff, 0,  n)
-    array_up[:,range(1, n, 2)] = 0.0
-    array_down[:,range(1, n, 2)] = 0.0
-    array_up = array_up.T
-    array_down = array_down.T
-    start_and_goal_dim = (dim[0], 0.3, dim[2])
+        if i % 2 == 0:            
+            array_up[i, :] = array_up[i, :] + np.linspace(height_diff, height_diff/n, n)            
+            array_down[i, :] = array_down[i, :] + np.linspace(height_diff/n, height_diff, n)            
+    array_up[:,range(0, n, 2)] = 0.0    
+    array_down[:,range(0, n, 2)] = 0.0    
+    array_up = array_up.T    
+    array_down = array_down.T    
+    start_and_goal_dim = (0.3, dim[1], dim[2])
     cfgs = (
         PlatformMeshPartsCfg(
             name="start",
@@ -112,84 +167,79 @@ def create_stepping_stones_cfgs(dim, level):
     )
     return cfgs
 
-def create_gaps_cfgs(dim ,level, gap_depth=0.3, gap_width=0.3):
+def create_gaps_cfgs(dim ,level, gap_depth=0.2, gap_width=0.3):
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """
     gap_depth = gap_depth + level * 0.2
-    gap_width = gap_width + level * 0.2
-
-    start_and_goal_dim = (dim[0], 0.5, dim[2])
-    n = int (dim[0]/gap_width)
-    middle_n = n//2
-    gap_array = np.ones(n,n) * gap_depth
-    gap_array[middle_n - 1, :] = 0
-    gap_array[middle_n + 1, :] = 0 
+    gap_width = gap_width + level * 0.4
+    n = 20
+    
+    n_per_gap = int (gap_width/(dim[0]/n))    
+    gap_array = np.ones((n,n)) * gap_depth
+    segments = list(range(0, n+1, n_per_gap))
+    # import pdb
+    # pdb.set_trace()
+    gap_array[:, segments[1]:segments[2]] = 0
+    gap_array[:, segments[-3]:segments[-2]] = 0     
     cfgs = (
         PlatformMeshPartsCfg(
-            name="start",
-            dim=start_and_goal_dim,
-            array=np.array([[0, 0], [0, 0]]),            
-            flips=(),
-            weight=0.1,
-        ),
-        PlatformMeshPartsCfg(
             name="gap",
-            dim=start_and_goal_dim,
+            dim=dim,
             array=gap_array,            
             flips=(),
             weight=0.1,
         ),
-        PlatformMeshPartsCfg(
-            name="end",
-            dim=start_and_goal_dim,
-            array=np.array([[1, 1], [1, 1]]) * gap_depth,            
-            flips=(),
-            weight=0.1,
-        ),
     )
     return cfgs
 
-def create_middle_steps_cfgs(dim, level, height = 0.4, n = 8):
-    height_std = level * 0.1
-    n = 8
+def create_middle_steps_cfgs(dim, level, height = 0.1, n = 9):
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """
+    height_offset = level * 0.4
     array = np.zeros((n, n))
     middle_n = n // 2
-    array[middle_n - 1, :] = height + np.random.normal(0, height_std)
-    array[middle_n + 1, :] = height + np.random.normal(0, height_std)
+    array[:,middle_n - 2] = height + height_offset
+    array[:,middle_n + 2] = height + height_offset
     cfgs = (
         PlatformMeshPartsCfg(
             name="step",
-            dim=cfg.dim,
+            dim=dim,
             array=array,            
             flips=(),
-            weight=0.1,
+            weight=0.1            
         ),
     )
     return cfgs
 
-def create_ramp_cfgs(dim, level, height_diff = 0.3):
-    height_std = level * 0.3  
-    height_noise = np.random.normal(0, height_std) 
-    height_diff = height_diff + cfg.floor_thickness + height_noise 
-    step_height = height_diff / (dim[1] - 1)
-    h1 = 0
-    array_ramp_up = np.zeros(dim)
-    array_ramp_down = np.zeros(dim)
+def create_ramp_cfgs(dim, level, height_diff = 0.3):   
+    """
+        dim order (x,y,z)  
+        mesh coordinate (x,y,z)
+        array order [y,x]
+    """   
+    n = 20
+    dim_square = (dim[0], dim[0], dim[2])
+    height_diff = height_diff + level * 0.3  + 0.1
+    step_height = height_diff / (n - 1)    
+    array_ramp_up = np.zeros((n,n))
+    array_ramp_down = np.zeros((n,n))
     # Relatively narrow starting and ending platform
-    start_and_goal_dim = (dim[0], 0.3, dim[2])
-    for s in range(int (dim[0])):
+    start_and_goal_dim = (0.4, dim[1], dim[2])
+    h1 = 0.0
+    for s in range(n):
         array_ramp_up[:, s] = h1
-        array_ramp_down[:, int (dim[0]) - s] = h1
+        array_ramp_down[:, n - s - 1] = np.max((h1, 0.0))
         h1 = h1 + step_height
-    cfgs = (
-        PlatformMeshPartsCfg(
-            name="start",
-            dim=start_and_goal_dim,
-            array=np.array([[0, 0], [0, 0]]),            
-            flips=(),
-            weight=0.1,
-        ),
+    cfgs = (        
         HeightMapMeshPartsCfg(
             name="ramp_up",
-            dim=cfg.dim,
+            dim=dim_square,
             height_map=array_ramp_up,
             rotations=(),
             flips=(),
@@ -197,6 +247,7 @@ def create_ramp_cfgs(dim, level, height_diff = 0.3):
             target_num_faces=1000,
             simplify=True,
             weight=0.1,
+            add_floor=False            
         ),
         PlatformMeshPartsCfg(
             name="goal",
@@ -207,7 +258,7 @@ def create_ramp_cfgs(dim, level, height_diff = 0.3):
         ),
         HeightMapMeshPartsCfg(
             name="ramp_down",
-            dim=cfg.dim,
+            dim=dim_square,
             height_map=array_ramp_down,
             rotations=(),
             flips=(),
