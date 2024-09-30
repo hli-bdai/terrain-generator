@@ -642,7 +642,7 @@ def create_tunnel(cfg: MeshPartsCfg, height_diff=0.2, **kwargs):
 
 def create_stairs(
         cfg: MeshPartsCfg, height_diff=1.0, num_stairs: int=1,
-        type: str='straight_up', noise: float=0.0):
+        type: str='straight_up', noise: float=0.0, flip: bool = False):
     # * create an array for the stair feature based on the desired number of stairs
     stairs_array = np.ones((num_stairs, num_stairs))
     start_array = np.array([[0]])
@@ -696,6 +696,9 @@ def create_stairs(
         noise_array = noise*(2*np.random.rand(num_stairs, num_stairs)-1)
         stairs_array += noise_array
 
+    if flip:
+        stairs_array = stairs_array.transpose()
+        stairs_array = np.flip(stairs_array, 1)
     cfgs = (
         PlatformMeshPartsCfg(
             name="start",
@@ -710,7 +713,7 @@ def create_stairs(
             dim=cfg.dim,
             array=((stairs_array*height_diff)+cfg.floor_thickness),
             # rotations=(90, 180, 270),
-            flips=(),
+            flips=(0,1,0),
             weight=0.1,
         ),
         PlatformMeshPartsCfg(
